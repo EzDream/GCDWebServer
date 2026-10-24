@@ -177,6 +177,35 @@ function _reload(path) {
 }
 
 $(document).ready(function() {
+  function prepareFolderUploads(data) {
+    var groups = data.folderGroups = Object.create(null);
+    $.each(data.files, function(_, file) {
+      var path = file.webkitRelativePath || (file.relativePath || '') + file.name;
+      if (path.indexOf('/') < 0) return;
+      var name = path.split('/')[0];
+      var group = groups[name] || (groups[name] = {
+        name: name, total: 0, loaded: 0, pending: 0, failed: 0, cancelled: false, cancels: []
+      });
+      group.total += file.size || 0;
+      group.pending++;
+    });
+    data.uploadBasePath = _path;
+  }
+
+  function finishUpload(data) {
+    if (data.uploadFinished) return;
+    data.uploadFinished = true;
+    var group = data.folderGroup;
+    if (group) {
+      group.pending--;
+      if (!group.pending && !group.cancelled) {
+        group.context.remove();
+      }
+    } else {
+      data.context.remove();
+    }
+    $('.uploading').toggle($('#uploads').children().length > 0);
+  }
   
   $("#upload-file").click(function(event) {
     event.preventDefault();
@@ -201,7 +230,9 @@ $(document).ready(function() {
       _showError('The selected folder contains no files.', 'Upload', '');
       return;
     }
-    $("#fileupload").fileupload('add', {files: files, uploadBasePath: base});
+    var data = {files: files, uploadBasePath: base};
+    prepareFolderUploads(data);
+    $("#fileupload").fileupload('add', data);
   });
   
   $("#fileupload").fileupload({
@@ -215,6 +246,12 @@ $(document).ready(function() {
     url: 'upload',
     type: 'POST',
     dataType: 'json',
+    change: function(e, data) {
+      prepareFolderUploads(data);
+    },
+    drop: function(e, data) {
+      prepareFolderUploads(data);
+    },
     
     start: function(e) {
       $(".uploading").show();
@@ -231,12 +268,26 @@ $(document).ready(function() {
       components.pop();
       var base = data.uploadBasePath || _path;
       var destination = base + (components.length ? components.join('/') + '/' : '');
+      var group = data.folderGroup = components.length && data.folderGroups && data.folderGroups[components[0]];
+      if (group && group.cancelled) return;
       data.formData = {
         path: destination
       };
-      data.context = $(tmpl("template-uploads", {
-        path: base + relativePath
-      })).appendTo("#uploads");
+      if (group) {
+        if (!group.context) {
+          group.context = $(tmpl('template-uploads', {path: group.name})).appendTo('#uploads');
+          group.context.find('.column-path p').prepend($('<span class="glyphicon glyphicon-folder-close" aria-hidden="true">'), ' ');
+          group.context.find('button').on('click', function() {
+            group.cancelled = true;
+            $.each(group.cancels, function(_, cancel) { cancel(); });
+            group.context.remove();
+            $('.uploading').toggle($('#uploads').children().length > 0);
+          });
+        }
+        data.context = group.context;
+      } else {
+        data.context = $(tmpl('template-uploads', {path: base + relativePath})).appendTo('#uploads');
+      }
       $(".uploading").show();
       var jqXHR;
       var createRequest;
@@ -252,25 +303,36 @@ $(document).ready(function() {
           if (textStatus != 'abort') {
             _showError('Failed creating folder "' + destination + '"', textStatus, errorThrown);
           }
-          data.context.remove();
-          $(".uploading").toggle($("#uploads").children().length > 0);
+          if (group && textStatus != 'abort') group.failed++;
+          finishUpload(data);
         });
       } else {
         jqXHR = data.submit();
       }
-      data.context.find("button").click(function(event) {
+      var cancel = function() {
         if (createRequest) {
           createRequest.abort();
         }
         if (jqXHR) {
           jqXHR.abort();
         }
-      });
+      };
+      if (group) group.cancels.push(cancel);
+      else data.context.find('button').click(cancel);
     },
     
     progress: function(e, data) {
       var progress = parseInt(data.loaded / data.total * 100, 10);
+      var group = data.folderGroup;
+      if (group) {
+        var loaded = (data.files[0].size || 0) * Math.min(1, data.loaded / (data.total || 1));
+        group.loaded += loaded - (data.folderLoaded || 0);
+        data.folderLoaded = loaded;
+        progress = group.total ? Math.floor(group.loaded / group.total * 100) : 0;
+        progress = Math.min(99, progress);
+      }
       data.context.find(".progress-bar").css("width", progress + "%");
+      if (group) data.context.find('.progress-bar').text(progress + '%');
     },
     
     done: function(e, data) {
@@ -280,13 +342,13 @@ $(document).ready(function() {
     fail: function(e, data) {
       var file = data.files[0];
       if (data.errorThrown != "abort") {
+        if (data.folderGroup) data.folderGroup.failed++;
         _showError("Failed uploading \"" + file.name + "\" to \"" + _path + "\"", data.textStatus, data.errorThrown);
       }
     },
     
     always: function(e, data) {
-      data.context.remove();
-      $(".uploading").toggle($("#uploads").children().length > 0);
+      finishUpload(data);
     },
     
   });

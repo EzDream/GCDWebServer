@@ -99,6 +99,22 @@
   float: right;
 }
 
+#upload-menu + .dropdown-menu {
+  width: auto;
+}
+
+#upload-menu + .dropdown-menu > li > a {
+  padding: 6px 12px;
+  white-space: nowrap;
+}
+
+#upload-menu + .dropdown-menu .glyphicon {
+  display: inline-block;
+  width: 20px;
+  margin-right: 4px;
+  text-align: center;
+}
+
 #create-input {
   width: 50%;
   height: 20px;
