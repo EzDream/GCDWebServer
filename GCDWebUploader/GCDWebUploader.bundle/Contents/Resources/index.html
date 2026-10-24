@@ -50,7 +50,7 @@
     <script type="text/javascript">
       var _device = "%device%";
     </script>
-    <script type="text/javascript" src="js/index.js?v=folder-upload-3"></script>
+    <script type="text/javascript" src="js/index.js?v=upload-menu-4"></script>
   </head>
   <body>
     
@@ -65,13 +65,16 @@
       <div id="alerts"></div>
       
       <div class="btn-toolbar">
-        <button type="button" class="btn btn-primary fileinput-button" id="upload-file">
-          <span class="glyphicon glyphicon-upload"></span> Upload Files&hellip;
-          <input id="fileupload" type="file" name="files[]" multiple>
-        </button>
-        <button type="button" class="btn btn-primary" id="upload-folder">
-          <span class="glyphicon glyphicon-folder-open"></span> Upload Folder&hellip;
-        </button>
+        <div class="btn-group">
+          <button type="button" class="btn btn-primary dropdown-toggle" id="upload-menu" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <span class="glyphicon glyphicon-upload"></span> Upload <span class="caret"></span>
+          </button>
+          <ul class="dropdown-menu" aria-labelledby="upload-menu">
+            <li><a href="#" id="upload-file">Upload Files&hellip;</a></li>
+            <li><a href="#" id="upload-folder">Upload Folder&hellip;</a></li>
+          </ul>
+        </div>
+        <input id="fileupload" type="file" name="files[]" multiple style="display:none">
         <input id="folderupload" type="file" name="files[]" webkitdirectory multiple style="display:none">
         <button type="button" class="btn btn-success" id="create-folder">
           <span class="glyphicon glyphicon-folder-close"></span> Create Folder&hellip;

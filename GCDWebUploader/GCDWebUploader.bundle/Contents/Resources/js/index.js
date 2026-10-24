@@ -178,10 +178,9 @@ function _reload(path) {
 
 $(document).ready(function() {
   
-  // Workaround Firefox and IE not showing file selection dialog when clicking on "upload-file" <button>
-  // Making it a <div> instead also works but then it the button doesn't work anymore with tab selection or accessibility
   $("#upload-file").click(function(event) {
-    $("#fileupload").click();
+    event.preventDefault();
+    document.getElementById('fileupload').click();
   });
   
   // Prevent event bubbling when using workaround above
@@ -190,6 +189,7 @@ $(document).ready(function() {
   });
 
   $("#upload-folder").click(function(event) {
+    event.preventDefault();
     document.getElementById('folderupload').click();
   });
 
