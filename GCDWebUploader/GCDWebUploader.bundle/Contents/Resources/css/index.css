@@ -37,6 +37,36 @@
 .column-name {
 }
 
+#listing {
+  display: block;
+}
+
+#listing > .row-file {
+  display: flex;
+  align-items: center;
+  height: auto;
+  min-height: 40px;
+  border-top: 1px solid #ddd;
+}
+
+#listing > .row-file > td {
+  display: block;
+  flex: 0 0 auto;
+  border-top: 0;
+}
+
+#listing > .row-file > .column-name {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+#listing > .row-file > .column-size,
+#listing > .row-file > .column-download {
+  width: auto;
+  white-space: nowrap;
+}
+
 .column-size {
   width: 100px;
   text-align: right;
@@ -124,6 +154,50 @@
 }
 
 /* Initial state */
+
+.column-download {
+  width: 1%;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.download-control {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+}
+
+.download-active {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.download-active .progress {
+  width: 100px;
+  flex: 0 0 100px;
+  height: 20px;
+  margin: 0;
+}
+
+.download-active .progress-bar {
+  min-width: 30px;
+  transition: none;
+}
+
+.button-cancel-download {
+  border: 0;
+  background: transparent;
+  color: #777;
+  cursor: pointer;
+  padding: 2px 5px;
+  line-height: 18px;
+}
+
+.button-cancel-download:hover,
+.button-cancel-download:focus {
+  color: #333;
+}
 
 .uploading {
   display: none;
