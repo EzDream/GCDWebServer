@@ -188,6 +188,21 @@ $(document).ready(function() {
   $("#fileupload").click(function(event) {
     event.stopPropagation();
   });
+
+  $("#upload-folder").click(function(event) {
+    document.getElementById('folderupload').click();
+  });
+
+  $("#folderupload").change(function() {
+    var files = Array.prototype.slice.call(this.files || []);
+    var base = _path;
+    this.value = '';
+    if (!files.length) {
+      _showError('The selected folder contains no files.', 'Upload', '');
+      return;
+    }
+    $("#fileupload").fileupload('add', {files: files, uploadBasePath: base});
+  });
   
   $("#fileupload").fileupload({
     dropZone: $(document),
@@ -206,20 +221,50 @@ $(document).ready(function() {
     },
     
     stop: function(e) {
-      $(".uploading").hide();
+      $(".uploading").toggle($("#uploads").children().length > 0);
     },
     
     add: function(e, data) {
       var file = data.files[0];
+      var relativePath = file.webkitRelativePath || (file.relativePath || '') + file.name;
+      var components = relativePath.split('/');
+      components.pop();
+      var base = data.uploadBasePath || _path;
+      var destination = base + (components.length ? components.join('/') + '/' : '');
       data.formData = {
-        path: _path
+        path: destination
       };
       data.context = $(tmpl("template-uploads", {
-        path: _path + file.name
+        path: base + relativePath
       })).appendTo("#uploads");
-      var jqXHR = data.submit();
+      $(".uploading").show();
+      var jqXHR;
+      var createRequest;
+      if (components.length) {
+        createRequest = $.ajax({
+          url: 'create',
+          type: 'POST',
+          data: {path: destination, recursive: true},
+          dataType: 'json'
+        }).done(function() {
+          jqXHR = data.submit();
+        }).fail(function(request, textStatus, errorThrown) {
+          if (textStatus != 'abort') {
+            _showError('Failed creating folder "' + destination + '"', textStatus, errorThrown);
+          }
+          data.context.remove();
+          $(".uploading").toggle($("#uploads").children().length > 0);
+        });
+      } else {
+        jqXHR = data.submit();
+      }
       data.context.find("button").click(function(event) {
-        jqXHR.abort();
+        if (createRequest) {
+          createRequest.abort();
+        }
+        if (jqXHR) {
+          jqXHR.abort();
+        }
       });
     },
     
@@ -241,9 +286,11 @@ $(document).ready(function() {
     
     always: function(e, data) {
       data.context.remove();
+      $(".uploading").toggle($("#uploads").children().length > 0);
     },
     
   });
+
   
   $("#create-input").keypress(function(event) {
     if (event.keyCode == ENTER_KEYCODE) {

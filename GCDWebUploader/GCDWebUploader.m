@@ -387,11 +387,34 @@ NS_ASSUME_NONNULL_END
 
 - (GCDWebServerResponse*)createDirectory:(GCDWebServerURLEncodedFormRequest*)request {
   NSString* relativePath = [request.arguments objectForKey:@"path"];
-  NSString* absolutePath = [self _uniquePathForPath:[_uploadDirectory stringByAppendingPathComponent:GCDWebServerNormalizePath(relativePath)]];
+  BOOL recursive = [[request.arguments objectForKey:@"recursive"] boolValue];
+  NSString* normalizedPath = GCDWebServerNormalizePath(relativePath);
+  NSString* requestedPath = [_uploadDirectory stringByAppendingPathComponent:normalizedPath];
+  NSString* absolutePath = recursive ? requestedPath : [self _uniquePathForPath:requestedPath];
+
+  if (recursive && [normalizedPath isEqualToString:@"/"]) {
+    return [GCDWebServerDataResponse responseWithJSONObject:@{}];
+  }
 
   NSString* directoryName = [absolutePath lastPathComponent];
   if (!_allowHiddenItems && [directoryName hasPrefix:@"."]) {
     return [GCDWebServerErrorResponse responseWithClientError:kGCDWebServerHTTPStatusCode_Forbidden message:@"Creating directory name \"%@\" is not allowed", directoryName];
+  }
+
+  if (recursive && !_allowHiddenItems) {
+    for (NSString* component in [normalizedPath pathComponents]) {
+      if ([component hasPrefix:@"."] && ![component isEqualToString:@"."]) {
+        return [GCDWebServerErrorResponse responseWithClientError:kGCDWebServerHTTPStatusCode_Forbidden message:@"Creating directory name \"%@\" is not allowed", component];
+      }
+    }
+  }
+
+  BOOL isDirectory = NO;
+  if (recursive && [[NSFileManager defaultManager] fileExistsAtPath:absolutePath isDirectory:&isDirectory]) {
+    if (isDirectory) {
+      return [GCDWebServerDataResponse responseWithJSONObject:@{}];
+    }
+    return [GCDWebServerErrorResponse responseWithClientError:kGCDWebServerHTTPStatusCode_Conflict message:@"\"%@\" is not a directory", relativePath];
   }
 
   if (![self shouldCreateDirectoryAtPath:absolutePath]) {
@@ -399,7 +422,7 @@ NS_ASSUME_NONNULL_END
   }
 
   NSError* error = nil;
-  if (![[NSFileManager defaultManager] createDirectoryAtPath:absolutePath withIntermediateDirectories:NO attributes:nil error:&error]) {
+  if (![[NSFileManager defaultManager] createDirectoryAtPath:absolutePath withIntermediateDirectories:recursive attributes:nil error:&error]) {
     return [GCDWebServerErrorResponse responseWithServerError:kGCDWebServerHTTPStatusCode_InternalServerError underlyingError:error message:@"Failed creating directory \"%@\"", relativePath];
   }
 

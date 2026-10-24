@@ -50,7 +50,7 @@
     <script type="text/javascript">
       var _device = "%device%";
     </script>
-    <script type="text/javascript" src="js/index.js"></script>
+    <script type="text/javascript" src="js/index.js?v=folder-upload-3"></script>
   </head>
   <body>
     
@@ -69,6 +69,10 @@
           <span class="glyphicon glyphicon-upload"></span> Upload Files&hellip;
           <input id="fileupload" type="file" name="files[]" multiple>
         </button>
+        <button type="button" class="btn btn-primary" id="upload-folder">
+          <span class="glyphicon glyphicon-folder-open"></span> Upload Folder&hellip;
+        </button>
+        <input id="folderupload" type="file" name="files[]" webkitdirectory multiple style="display:none">
         <button type="button" class="btn btn-success" id="create-folder">
           <span class="glyphicon glyphicon-folder-close"></span> Create Folder&hellip;
         </button>
