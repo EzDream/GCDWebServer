@@ -130,8 +130,23 @@ NS_ASSUME_NONNULL_END
 #endif
                      footer = [NSString stringWithFormat:[siteBundle localizedStringForKey:@"FOOTER_FORMAT" value:@"" table:nil], name, version];
                    }
+                   NSString* initialPath = server.initialPath ?: @"/";
+                   if ([[initialPath pathComponents] containsObject:@".."]) {
+                     initialPath = @"/";
+                   }
+                   initialPath = GCDWebServerNormalizePath(initialPath);
+                   initialPath = [@"/" stringByAppendingString:[initialPath stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"/"]]];
+                   if (![initialPath isEqualToString:@"/"]) {
+                     initialPath = [initialPath stringByAppendingString:@"/"];
+                   }
+                   BOOL isDirectory = NO;
+                   NSString* initialDirectory = [server.uploadDirectory stringByAppendingPathComponent:initialPath];
+                   if (![[NSFileManager defaultManager] fileExistsAtPath:initialDirectory isDirectory:&isDirectory] || !isDirectory) {
+                     initialPath = @"/";
+                   }
                    return [GCDWebServerDataResponse responseWithHTMLTemplate:(NSString*)[siteBundle pathForResource:@"index" ofType:@"html"]
                                                                    variables:@{
+                                                                     @"initialPath" : [initialPath stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet alphanumericCharacterSet]],
                                                                      @"device" : device,
                                                                      @"title" : title,
                                                                      @"header" : header,

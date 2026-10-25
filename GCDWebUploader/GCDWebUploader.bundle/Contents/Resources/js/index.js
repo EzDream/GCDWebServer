@@ -420,6 +420,6 @@ $(document).ready(function() {
     _reload(_path);
   });
   
-  _reload("/");
+  _reload(_initialPath || "/");
   
 });

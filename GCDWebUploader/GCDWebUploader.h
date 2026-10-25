@@ -84,6 +84,13 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, readonly) NSString* uploadDirectory;
 
 /**
+ *  Initial directory shown in the browser, relative to uploadDirectory.
+ *  For example, @"/folder/" opens that folder while retaining navigation to @"/".
+ *  The default value is nil, which opens the root directory.
+ */
+@property(nonatomic, copy, nullable) NSString* initialPath;
+
+/**
  *  Sets the delegate for the uploader.
  */
 @property(nonatomic, weak, nullable) id<GCDWebUploaderDelegate> delegate;
